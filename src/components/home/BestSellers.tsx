@@ -16,8 +16,7 @@ export function BestSellers() {
         <div className="container-shop">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold">{t('home.bestSellers')}</h2>
-               <p className="text-muted-foreground mt-1">Customer favorites this monthfhgsdfg khg</p>
+              <h2 className="text-lg md:text-3xl font-bold">{t('home.bestSellers')}</h2>
             </div>
           </div>
           <div className="product-grid">
@@ -37,8 +36,7 @@ export function BestSellers() {
       <div className="container-shop">
         <div className={`flex items-center justify-between mb-5 reveal-left ${isVisible ? 'reveal-visible' : ''}`}>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold">{t('home.bestSellers')}</h2>
-            {/* <p className="text-muted-foreground mt-1">Customer favorites this month</p> */}
+            <h2 className="text-lg md:text-3xl font-bold">{t('home.bestSellers')}</h2>
           </div>
           <Link
             to="/shop?filter=bestsellers"

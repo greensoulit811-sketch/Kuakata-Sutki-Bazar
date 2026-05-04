@@ -426,7 +426,7 @@ export default function ProductDetailsPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full h-12 rounded-lg font-medium text-sm border-border hover:border-primary hover:bg-primary/5 transition-all gap-2"
+                  className="w-full h-12 rounded-lg font-medium text-sm border-border hover:border-primary hover:text-primary hover:bg-primary/5 transition-all gap-2"
                   onClick={handleAddToCart}
                   disabled={isAddingToCart || effectiveStock === 0 || (hasVariants && !selectedVariant)}
                 >

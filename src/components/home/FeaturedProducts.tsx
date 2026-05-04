@@ -33,11 +33,11 @@ export function FeaturedProducts() {
   if (products.length === 0) return null;
 
   return (
-    <section className="section-padding bg-secondary/50" ref={ref}>
+    <section className="section-padding bg-secondary/50 -mt-10" ref={ref}>
       <div className="container-shop">
         <div className={`flex items-center justify-between mb-5 reveal-left ${isVisible ? 'reveal-visible' : ''}`}>
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold">{t('home.featuredProducts')}</h2>
+            <h2 className="text-lg md:text-3xl font-bold">{t('home.featuredProducts')}</h2>
             {/* <p className="text-muted-foreground mt-1">Handpicked just for you</p> */}
           </div>
           <Link

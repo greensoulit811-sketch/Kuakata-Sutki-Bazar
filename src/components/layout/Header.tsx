@@ -38,7 +38,7 @@ export function Header() {
   return (
     <header className="header-sticky">
       <div className="container-shop">
-        <div className="flex items-center justify-between h-18 md:h-20">
+        <div className="flex items-center justify-between h-14 md:h-20">
           {/* Mobile menu */}
           <Sheet>
             <SheetTrigger asChild className="md:hidden">
@@ -107,16 +107,6 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="hidden sm:flex"
-            >
-              <Search className="h-6 w-6" />
-              <span className="sr-only">{t('common.search')}</span>
-            </Button>
-
             {/* Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

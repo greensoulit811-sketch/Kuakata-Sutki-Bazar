@@ -100,7 +100,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <div className="group bg-card rounded-md border border-border/60 flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-foreground/5 hover:border-border">
       <Link to={`/product/${product.slug}`} className="block flex-1">
         {/* Image */}
-        <div className="relative lg:aspect-[5/6] aspect-[4/5.5] overflow-hidden bg-secondary/50">
+        <div className="relative lg:aspect-[5/5] aspect-[4/5] overflow-hidden bg-secondary/50">
           <img
             src={product.images[0] || '/placeholder.svg'}
             alt={product.name}
@@ -129,14 +129,14 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4 text-center">
+        <div className="p-4">
           <p className="text-[11px] text-muted-foreground mb-1 uppercase tracking-widest font-medium">
             {product.category?.name || t('product.uncategorized')}
           </p>
           <h3 className="font-semibold text-sm lg:text-lg line-clamp-1 mb-2 group-hover:text-primary transition-colors leading-snug">
             {product.name}
           </h3>
-          <div className="flex items-baseline gap-2 justify-center">
+          <div className="flex items-baseline gap-4">
             {hasDiscount ? (
               <>
                 <span className="font-bold text-primary text-base">
@@ -158,7 +158,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <Button
           variant="outline"
           size="sm"
-          className="w-full h-8 sm:h-10 text-xs sm:text-sm font-medium rounded-lg border-border hover:border-primary hover:bg-primary/5 transition-all gap-1.5 sm:gap-2"
+          className="w-full h-7 sm:h-10 text-xs sm:text-sm font-medium rounded-lg border-border hover:border-primary hover:text-primary hover:bg-primary/5 transition-all gap-1.5 sm:gap-2"
           onClick={handleAddToCart}
           disabled={isAddingToCart || product.stock === 0}
           aria-label={product.has_variants ? 'অপশন দেখুন' : t('product.addToCart')}
@@ -168,7 +168,7 @@ export function ProductCard({ product }: ProductCardProps) {
         </Button>
         <Button
           size="sm"
-          className="btn-accent w-full h-8 sm:h-10 text-xs sm:text-sm font-semibold rounded-lg shadow-sm hover:shadow-md transition-all gap-1.5 sm:gap-2"
+          className="btn-accent w-full h-7 sm:h-8 sm:h-10 text-xs sm:text-sm font-semibold rounded-lg shadow-sm hover:shadow-md transition-all gap-1.5 sm:gap-2"
           onClick={handleBuyNow}
           disabled={isBuyingNow || product.stock === 0}
           aria-label={t('product.buyNow')}
