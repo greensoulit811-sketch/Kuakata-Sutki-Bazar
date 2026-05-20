@@ -75,7 +75,7 @@ export function HeroSlider() {
     <section className="w-full">
       {/* Slider */}
       <div className="relative overflow-hidden rounded-lg mx-2 md:mx-3">
-        <div className="relative aspect-[16/5] md:aspect-[16/6]">
+        <div className="relative aspect-[9/5] md:aspect-[16/6]">
           {slides.map((slide, index) => {
             const isActive = index === currentSlide;
             return (

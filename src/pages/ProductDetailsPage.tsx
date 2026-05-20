@@ -292,7 +292,7 @@ export default function ProductDetailsPage() {
                       {product.category.name}
                     </Link>
                   )}
-                  <h1 className="text-2xl md:text-3xl lg:text-[1.5rem] font-bold leading-tight text-foreground">
+                  <h1 className="text-xl md:text-3xl lg:text-[1.5rem] font-bold leading-tight text-foreground">
                     {product.name}
                   </h1>
                 </div>
@@ -554,7 +554,7 @@ export default function ProductDetailsPage() {
               <h2 className="text-2xl font-bold">{t('product.relatedProducts')}</h2>
               <Link to="/shop" className="text-sm font-medium text-primary hover:underline">সব দেখুন</Link>
             </div>
-            <div className="product-grid">
+            <div className="product-grid gap-3">
               {relatedProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
