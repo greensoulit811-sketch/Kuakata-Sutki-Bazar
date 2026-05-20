@@ -29,7 +29,7 @@ export interface Order {
   paid_amount: number;
   due_amount: number;
   transaction_id: string | null;
-  partial_rule_snapshot: Record<string, any> | null;
+  partial_rule_snapshot?: Record<string, any> | null;
 }
 
 export interface OrderItem {

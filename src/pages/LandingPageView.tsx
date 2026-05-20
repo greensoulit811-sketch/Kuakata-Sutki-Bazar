@@ -4,6 +4,7 @@ import { useLandingPage } from '@/hooks/useLandingPages';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateOrder } from '@/hooks/useOrders';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { useShippingMethods } from '@/hooks/useShippingMethods';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useReviews, Product } from '@/hooks/useShopData';
@@ -65,6 +66,7 @@ export default function LandingPageView() {
   const { formatCurrency, settings } = useSiteSettings();
   const { user } = useAuth();
   const createOrder = useCreateOrder();
+  const { data: storeSettings } = useStoreSettings();
   const { data: shippingMethods = [] } = useShippingMethods(true);
   const { data: paymentMethods = [] } = usePaymentMethods(true);
   const { data: products = [] } = useLandingProducts(page?.product_ids || []);
@@ -134,6 +136,14 @@ export default function LandingPageView() {
     }
 
     const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
+    // Build partial rule snapshot
+    const partialSnapshot = hasPartial && selectedPayment ? {
+      partial_type: selectedPayment.partial_type,
+      fixed_partial_amount: selectedPayment.fixed_partial_amount,
+      advance_amount: advanceAmount,
+      due_on_delivery: dueOnDelivery,
+    } : null;
+
     try {
       await createOrder.mutateAsync({
         order: {
@@ -148,6 +158,7 @@ export default function LandingPageView() {
           payment_status: hasPartial ? 'partial_paid' : 'unpaid',
           paid_amount: advanceAmount, due_amount: dueOnDelivery,
           transaction_id: transactionId.trim() || null,
+          partial_rule_snapshot: partialSnapshot,
         },
         items: [{
           product_id: selectedProduct.id, product_name: selectedProduct.name,
@@ -194,7 +205,7 @@ export default function LandingPageView() {
            <div className="flex-1 flex justify-end items-center gap-6">
               <button className="hover:scale-110 transition-transform"><Search className="h-5 w-5 stroke-[1.5px]" /></button>
               <button className="hover:scale-110 transition-transform" onClick={scrollToCheckout}><ShoppingBag className="h-5 w-5 stroke-[1.5px]" /></button>
-              <a href={`tel:${settings?.phone}`} className="lg:flex items-center gap-2 bg-black text-white px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hidden">
+              <a href={`tel:${storeSettings?.store_phone || settings.phone}`} className="lg:flex items-center gap-2 bg-black text-white px-5 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hidden">
                 <Phone className="h-3 w-3" /> Call Support
               </a>
            </div>
@@ -592,7 +603,7 @@ export default function LandingPageView() {
             {/* Bottom Bar */}
             <div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
-                  © {new Date().getFullYear()} {settings?.site_name} - ALL RIGHTS RESERVED.
+                  © {new Date().getFullYear()} {storeSettings?.store_name || settings.site_name} - ALL RIGHTS RESERVED.
                </p>
                <div className="flex items-center gap-6">
                   <a href="#" className="hover:scale-110 transition-transform"><Facebook className="h-4 w-4 stroke-[1.5px]" /></a>
