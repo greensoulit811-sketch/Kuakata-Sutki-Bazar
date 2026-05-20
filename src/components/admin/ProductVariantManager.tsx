@@ -67,7 +67,7 @@ export function ProductVariantManager({ productId, productName }: ProductVariant
 
     const variantData = {
       size: formData.size || null,
-      color: formData.color || null,
+      color: null,
       sku: formData.sku || `VAR-${Date.now()}`,
       variant_price: parseFloat(formData.variant_price) || 0,
       variant_sale_price: formData.variant_sale_price ? parseFloat(formData.variant_sale_price) : null,
@@ -139,52 +139,14 @@ export function ProductVariantManager({ productId, productName }: ProductVariant
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Size (Optional)</label>
+                <label className="block text-sm font-medium mb-2">Weight / Size (ওজন / সাইজ) *</label>
                 <input
                   type="text"
                   value={formData.size}
                   onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                  placeholder="e.g., M, L, XL"
+                  placeholder="e.g., ৫০০ গ্রাম, ১ কেজি, ২৫০ গ্রাম"
                   className="input-shop"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Color (Optional) — tap multiple to combine</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow', 'Pink', 'Orange', 'Purple', 'Brown', 'Grey', 'Navy'].map((color) => {
-                    const selectedColors = formData.color ? formData.color.split(', ').map(c => c.trim()).filter(Boolean) : [];
-                    const isSelected = selectedColors.includes(color);
-                    return (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => {
-                          let updated: string[];
-                          if (isSelected) {
-                            updated = selectedColors.filter(c => c !== color);
-                          } else {
-                            updated = [...selectedColors, color];
-                          }
-                          setFormData({ ...formData, color: updated.join(', ') });
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                          isSelected
-                            ? 'border-accent bg-accent text-accent-foreground'
-                            : 'border-border hover:border-accent/50'
-                        }`}
-                      >
-                        {color}
-                      </button>
-                    );
-                  })}
-                </div>
-                <input
-                  type="text"
-                  value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  placeholder="Or type custom colors (comma-separated)"
-                  className="input-shop"
+                  required
                 />
               </div>
 
@@ -264,8 +226,7 @@ export function ProductVariantManager({ productId, productName }: ProductVariant
             <table className="w-full text-sm">
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium">Size</th>
-                  <th className="px-4 py-3 text-left font-medium">Color</th>
+                  <th className="px-4 py-3 text-left font-medium">Weight / Size (ওজন / সাইজ)</th>
                   <th className="px-4 py-3 text-left font-medium">SKU</th>
                   <th className="px-4 py-3 text-left font-medium">Regular Price</th>
                   <th className="px-4 py-3 text-left font-medium">Sale Price</th>
@@ -277,7 +238,6 @@ export function ProductVariantManager({ productId, productName }: ProductVariant
                 {variants.map((variant) => (
                   <tr key={variant.id} className="hover:bg-muted/50">
                     <td className="px-4 py-3">{variant.size || '-'}</td>
-                    <td className="px-4 py-3">{variant.color || '-'}</td>
                     <td className="px-4 py-3 font-mono text-xs">{variant.sku}</td>
                     <td className="px-4 py-3 font-medium">
                       {variant.variant_price != null ? variant.variant_price.toFixed(2) : '-'}

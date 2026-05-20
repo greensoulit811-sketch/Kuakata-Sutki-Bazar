@@ -125,7 +125,7 @@ export default function ProductDetailsPage() {
 
   const handleAddToCart = async () => {
     if (hasVariants && !selectedVariant) {
-      toast.error('অনুগ্রহ করে সাইজ/কালার নির্বাচন করুন');
+      toast.error('অনুগ্রহ করে ওজন নির্বাচন করুন');
       return;
     }
     
@@ -169,7 +169,7 @@ export default function ProductDetailsPage() {
 
   const handleBuyNow = async () => {
     if (hasVariants && !selectedVariant) {
-      toast.error('অনুগ্রহ করে সাইজ/কালার নির্বাচন করুন');
+      toast.error('অনুগ্রহ করে ওজন নির্বাচন করুন');
       return;
     }
     
@@ -292,7 +292,7 @@ export default function ProductDetailsPage() {
                       {product.category.name}
                     </Link>
                   )}
-                  <h1 className="text-2xl md:text-3xl lg:text-[2.25rem] font-bold leading-tight text-foreground">
+                  <h1 className="text-2xl md:text-3xl lg:text-[2rem] font-bold leading-tight text-foreground">
                     {product.name}
                   </h1>
                 </div>
@@ -380,7 +380,7 @@ export default function ProductDetailsPage() {
                     <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-sm font-semibold text-emerald-600">{t('product.inStock')}</span>
                     <span className="text-sm text-muted-foreground">
-                      — {effectiveStock}টি স্টকে আছে
+                      — {effectiveStock} কেজি স্টকে আছে
                     </span>
                   </>
                 ) : (

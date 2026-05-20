@@ -25,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
 
     if (product.has_variants) {
-      toast.info('অনুগ্রহ করে সাইজ/কালার অপশন নির্বাচন করুন');
+      toast.info('অনুগ্রহ করে ওজন অপশন নির্বাচন করুন');
       navigate(`/product/${product.slug}`);
       return;
     }
@@ -63,7 +63,7 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
 
     if (product.has_variants) {
-      toast.info('অনুগ্রহ করে সাইজ/কালার অপশন নির্বাচন করুন');
+      toast.info('অনুগ্রহ করে ওজন অপশন নির্বাচন করুন');
       navigate(`/product/${product.slug}`);
       return;
     }

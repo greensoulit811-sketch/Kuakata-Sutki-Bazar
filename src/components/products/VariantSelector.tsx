@@ -125,7 +125,7 @@ export function VariantSelector({ variants, selectedVariant, onSelect, onColorSe
       {sizes.length > 0 && (
         <div>
           <label className="text-sm font-semibold mb-3 block tracking-wide">
-            সাইজ
+            ওজন
             {selectedSize && <span className="text-muted-foreground font-normal ml-1.5">({selectedSize})</span>}
           </label>
           <div className="flex flex-wrap gap-2.5">
@@ -138,7 +138,7 @@ export function VariantSelector({ variants, selectedVariant, onSelect, onColorSe
                   onClick={() => handleSizeSelect(size)}
                   disabled={!available}
                   className={cn(
-                    "min-w-[48px] h-11 px-5 rounded-full border-2 text-sm font-semibold transition-all duration-200",
+                    "min-w-[48px] h-11 px-5 rounded-lg border-2 text-sm font-semibold transition-all duration-200",
                     isSelected
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : available
@@ -172,7 +172,7 @@ export function VariantSelector({ variants, selectedVariant, onSelect, onColorSe
                   disabled={!available}
                   title={color}
                   className={cn(
-                    "min-w-[48px] h-11 px-5 rounded-full border-2 text-sm font-semibold transition-all duration-200",
+                    "min-w-[48px] h-11 px-5 rounded-lg border-2 text-sm font-semibold transition-all duration-200",
                     isSelected
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : available

@@ -237,7 +237,9 @@ export default function AdminOrderDetails() {
                           .filter(([_, v]) => v != null && v !== '')
                           .map(([key, value]) => (
                             <span key={key} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs">
-                              <span className="font-medium capitalize text-muted-foreground">{key}:</span>
+                              <span className="font-medium capitalize text-muted-foreground">
+                                {key === 'size' ? 'Weight' : key}:
+                              </span>
                               <span className="font-semibold">{String(value)}</span>
                             </span>
                           ))}
