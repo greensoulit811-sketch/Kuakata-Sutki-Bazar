@@ -292,7 +292,7 @@ export default function ProductDetailsPage() {
                       {product.category.name}
                     </Link>
                   )}
-                  <h1 className="text-2xl md:text-3xl lg:text-[2rem] font-bold leading-tight text-foreground">
+                  <h1 className="text-2xl md:text-3xl lg:text-[1.5rem] font-bold leading-tight text-foreground">
                     {product.name}
                   </h1>
                 </div>
@@ -331,7 +331,7 @@ export default function ProductDetailsPage() {
                       </span>
                     </>
                   ) : (
-                    <span className="text-3xl md:text-4xl font-extrabold text-foreground">
+                    <span className="text-3xl md:text-3xl font-extrabold text-foreground text--500">
                       {formatCurrency(selectedVariant.variant_price)}
                     </span>
                   )
