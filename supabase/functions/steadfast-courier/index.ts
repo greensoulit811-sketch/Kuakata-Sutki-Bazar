@@ -3,6 +3,49 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+}
+
+// Retry helper for network calls
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 1, timeoutMs = 4500) {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[FETCH] Attempt ${attempt}/${maxRetries} for ${url}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      console.error(`[FETCH] Attempt ${attempt} failed:`, err.message);
+      
+      if (err.name === 'AbortError') {
+        err.message = `Request timed out after ${timeoutMs}ms. The courier API took too long to respond.`;
+      }
+
+      // Don't retry on auth/validation errors
+      if (err.message?.includes('auth') || err.message?.includes('credential') || err.name === 'AbortError') {
+        throw err;
+      }
+      
+      // Wait before retry with exponential backoff
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 2000);
+        console.log(`[FETCH] Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Max retries exceeded');
 }
 
 Deno.serve(async (req) => {
@@ -60,6 +103,13 @@ Deno.serve(async (req) => {
       return createResponse({ success: false, error: 'Database error: ' + settingsError.message });
     }
 
+    let baseUrl = settings?.api_base_url?.replace(/\/+$/, '') || '';
+
+    // Auto-correct deprecated Steadfast URL to the new Packzy API URL
+    if (baseUrl.includes('portal.steadfast.com.bd')) {
+      baseUrl = baseUrl.replace('portal.steadfast.com.bd', 'portal.packzy.com');
+    }
+
     if (action === 'test-connection') {
       if (!settings?.enabled) {
         return createResponse({ 
@@ -73,15 +123,20 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const res = await fetch(`${settings.api_base_url}/get_balance`, {
+        const url = `${baseUrl}/get_balance`;
+        console.log(`[STEADFAST] Testing connection with URL: ${url}`);
+
+        const res = await fetchWithRetry(url, {
           headers: { 
             'Api-Key': settings.api_key, 
             'Secret-Key': settings.api_secret, 
             'Content-Type': 'application/json' 
           },
-        });
-        
+        }, 1, 4500);
+
         const resText = await res.text();
+        console.log(`[STEADFAST] Test response status: ${res.status}, body: ${resText}`);
+        
         let data: any;
         try { 
           data = JSON.parse(resText); 
@@ -93,21 +148,32 @@ Deno.serve(async (req) => {
         }
         
         if (res.ok && data.status === 200) {
+          console.log(`[STEADFAST] Connection test successful`);
           return createResponse({ success: true, balance: data.current_balance });
         }
         
+        console.error(`[STEADFAST] Connection test failed:`, data?.message);
         return createResponse({ 
           success: false, 
           error: data.message || 'API Connection Failed: Incorrect credentials or server error.' 
         });
       } catch (err: any) {
-        return createResponse({ success: false, error: 'Fetch failed: ' + err.message });
+        console.error(`[STEADFAST] Test fetch error:`, err);
+        return createResponse({ 
+          success: false, 
+          error: `Network error: ${err.message}. Please check if your server can reach Steadfast API.`,
+          debug_info: err.toString()
+        });
       }
     }
 
     if (action === 'create-parcel') {
       if (!settings?.enabled) {
-        return createResponse({ success: false, error: 'Steadfast not enabled' });
+        return createResponse({ success: false, error: 'Steadfast not enabled. Please enable it in Settings → Courier.' });
+      }
+
+      if (!settings?.api_base_url || !settings?.api_key || !settings?.api_secret) {
+        return createResponse({ success: false, error: 'Steadfast API credentials are missing. Please configure them in Settings → Courier.' });
       }
 
       const payload = {
@@ -119,45 +185,71 @@ Deno.serve(async (req) => {
         note: body.note || '',
       };
 
-      const res = await fetch(`${settings.api_base_url}/create_order`, {
-        method: 'POST',
-        headers: { 
-          'Api-Key': settings.api_key, 
-          'Secret-Key': settings.api_secret, 
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify(payload),
-      });
+      try {
+        const url = `${baseUrl}/create_order`;
+        console.log(`[STEADFAST] Creating parcel with URL: ${url}`);
+        console.log(`[STEADFAST] Payload:`, payload);
 
-      const resText = await res.text();
-      let data: any;
-      try { data = JSON.parse(resText); } catch {
-        return createResponse({ success: false, error: 'Invalid JSON response from courier.' });
-      }
+        const res = await fetchWithRetry(url, {
+          method: 'POST',
+          headers: { 
+            'Api-Key': settings.api_key, 
+            'Secret-Key': settings.api_secret, 
+            'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify(payload),
+        }, 1, 4500);
 
-      await supabase.from('courier_logs').insert({
-        order_id: body.order_id, provider: 'steadfast', action: 'create_parcel',
-        status: res.ok ? 'success' : 'failed', message: data.message || '',
-        request_payload: payload, response_payload: data,
-      });
+        const resText = await res.text();
+        console.log(`[STEADFAST] Response status: ${res.status}, body: ${resText}`);
+        
+        let data: any;
+        try { 
+          data = JSON.parse(resText); 
+        } catch {
+          console.error(`[STEADFAST] Failed to parse JSON response`);
+          return createResponse({ 
+            success: false, 
+            error: 'Invalid JSON response from courier. Please check your API URL and credentials.',
+            debug_info: `Response: ${resText.substring(0, 200)}`
+          });
+        }
 
-      if (res.ok && data.status === 200) {
-        await supabase.from('orders').update({
-          status: 'shipped', // Automatically mark as shipped
-          courier_provider: 'steadfast', courier_status: 'created',
-          courier_tracking_id: data.consignment?.tracking_code,
-          courier_consignment_id: data.consignment?.consignment_id?.toString(),
-          courier_updated_at: new Date().toISOString(),
-        }).eq('id', body.order_id);
+        const { error: logError } = await supabase.from('courier_logs').insert({
+          order_id: body.order_id, provider: 'steadfast', action: 'create_parcel',
+          status: res.ok && data?.status === 200 ? 'success' : 'failed', message: data?.message || resText,
+          request_payload: payload, response_payload: data,
+        });
+        if (logError) console.error('Failed to log:', logError);
 
+        if (res.ok && data?.status === 200) {
+          console.log(`[STEADFAST] Parcel created successfully`);
+          const { error: updateError } = await supabase.from('orders').update({
+            status: 'shipped',
+            courier_provider: 'steadfast', courier_status: 'created',
+            courier_tracking_id: data.consignment?.tracking_code,
+            courier_consignment_id: data.consignment?.consignment_id?.toString(),
+            courier_updated_at: new Date().toISOString(),
+          }).eq('id', body.order_id);
+          if (updateError) console.error('Failed to update order:', updateError);
+
+          return createResponse({ 
+            success: true, 
+            tracking_code: data.consignment?.tracking_code,
+            consignment_id: data.consignment?.consignment_id,
+          });
+        }
+        
+        console.error(`[STEADFAST] Parcel creation failed:`, data?.message);
+        return createResponse({ success: false, error: data?.message || 'Failed to create parcel. Please verify your API credentials.' });
+      } catch (err: any) {
+        console.error(`[STEADFAST] Fetch error:`, err);
         return createResponse({ 
-          success: true, 
-          tracking_code: data.consignment?.tracking_code,
-          consignment_id: data.consignment?.consignment_id,
+          success: false, 
+          error: `Network error: ${err.message}. This may be a temporary issue. Please try again.`,
+          debug_info: err.toString()
         });
       }
-      
-      return createResponse({ success: false, error: data.message || 'Failed to create parcel' });
     }
 
     if (action === 'sync-all') {
@@ -171,16 +263,23 @@ Deno.serve(async (req) => {
       if (ordersError) return createResponse({ success: false, error: ordersError.message });
       if (!activeOrders || activeOrders.length === 0) return createResponse({ success: true, count: 0 });
 
+      const startTime = Date.now();
       let updatedCount = 0;
       for (const order of activeOrders) {
+        // Break early to prevent hitting Edge Function 5-second wall clock limit
+        if (Date.now() - startTime > 4000) {
+          console.warn('[STEADFAST] Approaching execution timeout, stopping sync-all early.');
+          break;
+        }
+        
         try {
-          const res = await fetch(`${settings.api_base_url}/status_by_cid/${order.courier_consignment_id}`, {
+          const res = await fetchWithRetry(`${baseUrl}/status_by_cid/${order.courier_consignment_id}`, {
             headers: { 
               'Api-Key': settings.api_key, 
               'Secret-Key': settings.api_secret, 
               'Content-Type': 'application/json' 
             },
-          });
+          }, 1, 2000);
           
           if (!res.ok) continue;
           const data = await res.json();
@@ -214,21 +313,25 @@ Deno.serve(async (req) => {
         return createResponse({ success: false, error: 'Consignment ID required' });
       }
 
-      const res = await fetch(`${settings.api_base_url}/status_by_cid/${consignment_id}`, {
-        headers: { 
-          'Api-Key': settings.api_key, 
-          'Secret-Key': settings.api_secret, 
-          'Content-Type': 'application/json' 
-        },
-      });
-
-      const resText = await res.text();
-      let data: any;
-      try { data = JSON.parse(resText); } catch {
-        return createResponse({ success: false, error: 'Invalid response from courier tracking.' });
-      }
-
-      if (res.ok && data.status === 200) {
+      try {
+        const res = await fetchWithRetry(`${baseUrl}/status_by_cid/${consignment_id}`, {
+          headers: { 
+            'Api-Key': settings.api_key, 
+            'Secret-Key': settings.api_secret, 
+            'Content-Type': 'application/json' 
+          },
+        }, 1, 4500);
+  
+        const resText = await res.text();
+        let data: any;
+        try { data = JSON.parse(resText); } catch {
+          return createResponse({ success: false, error: 'Invalid response from courier tracking.' });
+        }
+  
+        if (!res.ok || data.status !== 200) {
+          return createResponse({ success: false, error: data.message || 'Failed to track status' });
+        }
+        
         let courierStatus = 'created';
         let mainOrderStatus = null;
         const ds = data.delivery_status?.toLowerCase();
@@ -254,17 +357,23 @@ Deno.serve(async (req) => {
         if (mainOrderStatus) {
           updateData.status = mainOrderStatus;
         }
-
+  
         await supabase.from('orders').update(updateData).eq('id', order_id);
-
+  
         return createResponse({ 
           success: true, 
           courier_status: courierStatus, 
           main_order_status: mainOrderStatus,
           delivery_status: data.delivery_status 
         });
+      } catch (err: any) {
+        console.error(`[STEADFAST] Fetch error:`, err);
+        return createResponse({ 
+          success: false, 
+          error: `Network error: ${err.message}. This may be a temporary issue. Please try again.`,
+          debug_info: err.toString()
+        });
       }
-      return createResponse({ success: false, error: data.message || 'Failed to track status' });
     }
 
     if (action === 'webhook') {

@@ -603,3 +603,7 @@ export default function ProductDetailsPage() {
     </Layout>
   );
 }
+
+
+
+

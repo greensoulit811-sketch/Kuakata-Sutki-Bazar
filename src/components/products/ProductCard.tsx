@@ -161,10 +161,10 @@ export function ProductCard({ product }: ProductCardProps) {
           className="w-full h-7 sm:h-10 text-xs sm:text-sm font-medium rounded-lg border-border hover:border-primary hover:text-primary hover:bg-primary/5 transition-all gap-1.5 sm:gap-2"
           onClick={handleAddToCart}
           disabled={isAddingToCart || product.stock === 0}
-          aria-label={product.has_variants ? 'অপশন দেখুন' : t('product.addToCart')}
+          aria-label={product.has_variants ? 'কার্ট এ অ্যাড করুন' : t('product.addToCart')}
         >
           {isAddingToCart && <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />}
-          {product.has_variants ? 'অপশন দেখুন' : t('product.addToCart')}
+          {product.has_variants ? 'কার্ট এ অ্যাড করুন' : t('product.addToCart')}
         </Button>
         <Button
           size="sm"

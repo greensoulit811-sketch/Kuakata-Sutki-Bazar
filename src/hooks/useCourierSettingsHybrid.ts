@@ -19,6 +19,12 @@ export interface CourierSettings {
   updated_at: string;
 }
 
+// Check if using proxy backend
+const USE_PROXY = import.meta.env.VITE_USE_STEADFAST_PROXY === 'true';
+const PROXY_URL = import.meta.env.VITE_STEADFAST_PROXY_URL || 'http://localhost:3001';
+
+console.log(`[CONFIG] Using Steadfast: ${USE_PROXY ? 'PROXY' : 'EDGE_FUNCTION'}`);
+
 export const useCourierSettings = (provider: string) => {
   return useQuery({
     queryKey: ['courier_settings', provider],
@@ -47,7 +53,6 @@ export const useSaveCourierSettings = () => {
         .maybeSingle();
 
       if (existing) {
-        // Update existing
         const { data, error } = await supabase
           .from('courier_settings')
           .update(settings)
@@ -58,7 +63,6 @@ export const useSaveCourierSettings = () => {
         if (error) throw error;
         return data;
       } else {
-        // Insert new
         const { data, error } = await supabase
           .from('courier_settings')
           .insert(settings)
@@ -83,13 +87,29 @@ export const useTestCourierConnection = () => {
   return useMutation({
     mutationFn: async (provider: string) => {
       try {
+        if (USE_PROXY) {
+          try {
+            console.log('[TEST] Using proxy to test connection...');
+            const response = await fetch(`${PROXY_URL}/api/steadfast/test`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error);
+            return data;
+          } catch (e: any) {
+            console.warn('[PROXY] Proxy failed, falling back to Edge Function:', e.message);
+          }
+        }
+
+        // Edge Function approach
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.access_token) {
           throw new Error('Session expired. Please login again.');
         }
 
-        console.log('[DEBUG] Testing connection...');
+        console.log('[TEST] Using Edge Function to test connection...');
         
         const response = await supabase.functions.invoke('steadfast-courier', {
           body: { action: 'test-connection' },
@@ -135,6 +155,44 @@ export const useCreateCourierParcel = () => {
       note?: string;
     }) => {
       try {
+        if (USE_PROXY) {
+          try {
+            console.log('[PROXY] Creating parcel using proxy...');
+            const response = await fetch(`${PROXY_URL}/api/steadfast/create-parcel`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                invoice: payload.invoice,
+                recipient_name: payload.recipient_name,
+                recipient_phone: payload.recipient_phone,
+                recipient_address: payload.recipient_address,
+                cod_amount: payload.cod_amount,
+                note: payload.note,
+              }),
+            });
+  
+            const data = await response.json();
+            console.log('[PROXY] Response:', data);
+            
+            if (!data.success) throw new Error(data.error);
+  
+            // Update order in Supabase
+            await supabase.from('orders').update({
+              status: 'shipped',
+              courier_provider: 'steadfast',
+              courier_status: 'created',
+              courier_tracking_id: data.tracking_code,
+              courier_consignment_id: data.consignment_id?.toString(),
+              courier_updated_at: new Date().toISOString(),
+            }).eq('id', payload.order_id);
+  
+            return data;
+          } catch (e: any) {
+            console.warn('[PROXY] Proxy failed, falling back to Edge Function:', e.message);
+          }
+        }
+
+        // Edge Function approach
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.access_token) {
@@ -186,6 +244,57 @@ export const useTrackCourierStatus = () => {
   return useMutation({
     mutationFn: async (payload: { consignment_id: string; order_id: string }) => {
       try {
+        if (USE_PROXY) {
+          try {
+            console.log('[PROXY] Tracking status using proxy...');
+            const response = await fetch(`${PROXY_URL}/api/steadfast/track`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ consignment_id: payload.consignment_id }),
+            });
+  
+            const data = await response.json();
+            console.log('[PROXY] Track response:', data);
+            
+            if (!data.success) throw new Error(data.error);
+  
+            // Update order
+            if (data.delivery_status) {
+              let courierStatus = 'created';
+              let mainOrderStatus = null;
+              const ds = data.delivery_status.toLowerCase();
+  
+              if (ds === 'delivered') {
+                courierStatus = 'delivered';
+                mainOrderStatus = 'delivered';
+              } else if (ds === 'cancelled' || ds === 'returned') {
+                courierStatus = 'cancelled';
+                mainOrderStatus = 'cancelled';
+              } else if (ds === 'pending') {
+                courierStatus = 'pending';
+              } else if (ds) {
+                courierStatus = 'in_transit';
+                mainOrderStatus = 'shipped';
+              }
+  
+              const updateData: any = { 
+                courier_status: courierStatus, 
+                courier_updated_at: new Date().toISOString() 
+              };
+              if (mainOrderStatus) {
+                updateData.status = mainOrderStatus;
+              }
+  
+              await supabase.from('orders').update(updateData).eq('id', payload.order_id);
+            }
+  
+            return data;
+          } catch (e: any) {
+            console.warn('[PROXY] Proxy failed, falling back to Edge Function:', e.message);
+          }
+        }
+
+        // Edge Function approach
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.access_token) {

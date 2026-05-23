@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Order } from '@/hooks/useOrders';
-import { useCourierSettings, useCreateCourierParcel, useTrackCourierStatus } from '@/hooks/useCourierSettings';
+import { useCourierSettings, useCreateCourierParcel, useTrackCourierStatus } from '@/hooks/useCourierSettingsHybrid';
 import { format } from 'date-fns';
 
 interface OrderCourierSectionProps {
