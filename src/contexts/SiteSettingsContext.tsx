@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { setStorageDebounced } from '@/lib/storage-utils';
 import enTranslations from '@/i18n/translations/en.json';
 import hiTranslations from '@/i18n/translations/hi.json';
 import bnTranslations from '@/i18n/translations/bn.json';
@@ -146,7 +147,24 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const queryClient = useQueryClient();
   const [userLanguagePreference, setUserLanguagePreferenceState] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('userLanguagePreference');
+      try {
+        const stored = localStorage.getItem('userLanguagePreference');
+        if (!stored) return null;
+        
+        // Handle both new format (with wrapper) and old format
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && 'value' in parsed) {
+          // New format from storage-utils
+          return typeof parsed.value === 'string' ? parsed.value : null;
+        }
+        
+        // Old format - stored as plain string
+        return typeof parsed === 'string' ? parsed : null;
+      } catch {
+        // If parsing fails, treat as plain string
+        const stored = localStorage.getItem('userLanguagePreference');
+        return stored && typeof stored === 'string' ? stored : null;
+      }
     }
     return null;
   });
@@ -170,7 +188,8 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const setUserLanguagePreference = useCallback((lang: string | null) => {
     setUserLanguagePreferenceState(lang);
     if (lang) {
-      localStorage.setItem('userLanguagePreference', lang);
+      // Use debounced storage for better performance
+      setStorageDebounced('userLanguagePreference', lang, { debounceMs: 300 });
     } else {
       localStorage.removeItem('userLanguagePreference');
     }

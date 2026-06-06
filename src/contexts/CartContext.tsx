@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { setStorageDebounced } from '@/lib/storage-utils';
 
 export interface CartItem {
   id: string;
@@ -84,7 +85,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
       try {
-        const items = JSON.parse(savedCart);
+        let items = JSON.parse(savedCart);
+        
+        // Handle both new format (with wrapper) and old format
+        if (items && typeof items === 'object' && 'value' in items && Array.isArray(items.value)) {
+          // New format from storage-utils
+          items = items.value;
+        } else if (!Array.isArray(items)) {
+          // Invalid format - reset
+          items = [];
+        }
+        
         dispatch({ type: 'SET_CART', payload: items });
       } catch (e) {
         console.error('Failed to parse cart from localStorage');
@@ -93,7 +104,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(state.items));
+    // Use debounced storage setter to avoid blocking performance
+    setStorageDebounced('cart', state.items, { debounceMs: 500 });
   }, [state.items]);
 
   const addItem = (item: CartItem) => dispatch({ type: 'ADD_ITEM', payload: item });

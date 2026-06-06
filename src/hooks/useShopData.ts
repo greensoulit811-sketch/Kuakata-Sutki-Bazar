@@ -101,7 +101,8 @@ export const useFeaturedProducts = () => {
         .from('products')
         .select('*, category:categories(*), product_variants(count)')
         .eq('is_featured', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(8);
       
       if (error) throw error;
       return (data || []).map((p: any) => ({
@@ -121,7 +122,8 @@ export const useBestSellers = () => {
         .from('products')
         .select('*, category:categories(*), product_variants(count)')
         .eq('is_best_seller', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(12);
       
       if (error) throw error;
       return (data || []).map((p: any) => ({

@@ -19,8 +19,22 @@ export default defineConfig(({ mode }) => ({
       compress: {
         drop_console: mode === 'production',
         drop_debugger: mode === 'production',
+        passes: 2, // Multiple passes for better compression
+      },
+      mangle: true, // Shorten variable names
+      format: {
+        comments: false, // Remove comments
       },
     },
+    // Optimize CSS
+    cssMinify: true,
+    cssCodeSplit: true, // Split CSS into smaller files
+    
+    // Better tree-shaking
+    treeshake: {
+      moduleSideEffects: false,
+    },
+
     rollupOptions: {
       output: {
         // Manual chunk splitting for better caching
@@ -41,15 +55,33 @@ export default defineConfig(({ mode }) => ({
     },
     chunkSizeWarningLimit: 1000,
     reportCompressedSize: false,
+    
+    // Sourcemaps only in dev
+    sourcemap: mode === 'development',
   },
+  
+  css: {
+    // Optimize CSS processing
+    postcss: './postcss.config.js',
+    preprocessorOptions: {
+      scss: {
+        // Optimizations for any SCSS if used
+      },
+    },
+  },
+
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  
   optimizeDeps: {
     // Pre-bundle important dependencies for faster cold starts
     include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+    // Exclude large libraries from pre-bundling
+    exclude: ['@supabase/supabase-js'],
   },
 }));
